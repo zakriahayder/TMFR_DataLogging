@@ -2,13 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Toaster, toast } from "sonner";
-import { fetchPlotData, getPorts, connectSerial, uploadCsv } from "@/lib/api";
+import {
+  connectSerial,
+  disconnectSerial,
+  fetchPlotData,
+  getPorts,
+  listDeviceFiles,
+  pullDeviceFile,
+  uploadCsv,
+} from "@/lib/api";
 import { TelemetryChart } from "@/components/telemetry-chart";
 import {
   TelemetryConfigurationModal,
   TelemetryTopBar,
 } from "@/components/telemetry-toolbar";
 import type {
+  DeviceFile,
   PlotDataResponse,
   PortInfo,
   SerialStatus,
@@ -21,6 +30,10 @@ export default function TelemetryPage() {
   const [scanningPorts, setScanningPorts] = useState(false);
   const [connectingSerial, setConnectingSerial] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+
+  const [deviceFiles, setDeviceFiles] = useState<DeviceFile[]>([]);
+  const [fetchingFiles, setFetchingFiles] = useState(false);
+  const [pullingFile, setPullingFile] = useState<string | null>(null);
 
   const [dataset, setDataset] = useState<UploadResponse | null>(null);
   const [uploadingCsv, setUploadingCsv] = useState(false);
@@ -40,7 +53,8 @@ export default function TelemetryPage() {
       return;
     }
 
-    const defaultXColumn = dataset.default_x ?? dataset.numeric_columns[0] ?? "";
+    const defaultXColumn =
+      dataset.default_x ?? dataset.numeric_columns[0] ?? "";
     const defaultYColumn =
       dataset.numeric_columns.find((column) => column !== defaultXColumn) ?? "";
 
@@ -49,7 +63,10 @@ export default function TelemetryPage() {
   }, [dataset]);
 
   const availableYColumns = useMemo(() => {
-    return dataset?.numeric_columns.filter((column) => column !== selectedXColumn) ?? [];
+    return (
+      dataset?.numeric_columns.filter((column) => column !== selectedXColumn) ??
+      []
+    );
   }, [dataset, selectedXColumn]);
 
   useEffect(() => {
@@ -70,7 +87,7 @@ export default function TelemetryPage() {
         toast.info("No serial ports found");
       } else {
         toast.success(
-          `Found ${availablePorts.length} port${availablePorts.length === 1 ? "" : "s"}`
+          `Found ${availablePorts.length} port${availablePorts.length === 1 ? "" : "s"}`,
         );
       }
     } catch (error) {
@@ -90,14 +107,71 @@ export default function TelemetryPage() {
     try {
       const nextSerialStatus = await connectSerial({ port, baudrate });
       setSerialStatus(nextSerialStatus);
+      setDeviceFiles([]);
       toast.success(`Connected to ${port}`);
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : "Failed to connect to serial device";
+        error instanceof Error
+          ? error.message
+          : "Failed to connect to serial device";
       setConnectionError(message);
       toast.error(message);
     } finally {
       setConnectingSerial(false);
+    }
+  }
+
+  async function handleSerialDisconnect() {
+    try {
+      const nextSerialStatus = await disconnectSerial();
+      setSerialStatus(nextSerialStatus);
+      setDeviceFiles([]);
+      toast.info("Disconnected from serial port");
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to disconnect";
+      toast.error(message);
+    }
+  }
+
+  async function handleFetchDeviceFiles() {
+    setFetchingFiles(true);
+    try {
+      const files = await listDeviceFiles();
+      setDeviceFiles(files);
+      if (files.length === 0) {
+        toast.info("No files found on device");
+      } else {
+        toast.success(
+          `Found ${files.length} file${files.length === 1 ? "" : "s"} on device`,
+        );
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Failed to list device files";
+      toast.error(message);
+    } finally {
+      setFetchingFiles(false);
+    }
+  }
+
+  async function handlePullDeviceFile(filename: string) {
+    setPullingFile(filename);
+    setPlotData(null);
+    setPlotError(null);
+
+    try {
+      const pulledDataset = await pullDeviceFile({ filename });
+      setDataset(pulledDataset);
+      toast.success(`Pulled ${filename} from device`);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? `Failed to pull ${filename}. Error Message: ${error.message}`
+          : "Failed to pull file from device";
+      toast.error(message);
+    } finally {
+      setPullingFile(null);
     }
   }
 
@@ -111,7 +185,8 @@ export default function TelemetryPage() {
       setDataset(uploadedDataset);
       toast.success(`Loaded ${uploadedDataset.filename}`);
     } catch (error) {
-      const message = error instanceof Error ? error.message : "CSV upload failed";
+      const message =
+        error instanceof Error ? error.message : "CSV upload failed";
       toast.error(message);
     } finally {
       setUploadingCsv(false);
@@ -226,12 +301,18 @@ export default function TelemetryPage() {
         scanningPorts={scanningPorts}
         connectingSerial={connectingSerial}
         connectionError={connectionError}
+        deviceFiles={deviceFiles}
+        fetchingFiles={fetchingFiles}
+        pullingFile={pullingFile}
         dataset={dataset}
         uploadLoading={uploadingCsv}
         plotLoading={loadingPlot}
         onClose={() => setIsConfigurationOpen(false)}
         onScanPorts={handlePortScan}
         onConnectToSerial={handleSerialConnect}
+        onDisconnectSerial={handleSerialDisconnect}
+        onFetchDeviceFiles={handleFetchDeviceFiles}
+        onPullDeviceFile={handlePullDeviceFile}
         onUploadCsv={handleCsvUpload}
         onClearDataset={handleDatasetClear}
         onGeneratePlot={handleGeneratePlotFromModal}

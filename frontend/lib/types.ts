@@ -14,6 +14,15 @@ export interface ConnectRequest {
   baudrate: number;
 }
 
+export interface DeviceFile {
+  name: string;
+  size: number;
+}
+
+export interface PullFileRequest {
+  filename: string;
+}
+
 export interface UploadResponse {
   filename: string;
   columns: string[];

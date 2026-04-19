@@ -5,18 +5,18 @@ import { AlertCircle, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { PlotDataResponse, UploadResponse } from "@/lib/types";
 
-const Plot = dynamic(() => import("react-plotly.js"), {
+const ReactECharts = dynamic(() => import("echarts-for-react"), {
   ssr: false,
   loading: () => <PlotSkeleton />,
 });
 
 const SERIES_COLORS = [
-  "var(--color-series-1)",
-  "var(--color-series-2)",
-  "var(--color-series-3)",
-  "var(--color-series-4)",
-  "var(--color-series-5)",
-  "var(--color-series-6)",
+  "#2196f3",
+  "#bbdefb",
+  "#ffeb3b",
+  "#f44336",
+  "#d7dde5",
+  "#b5bdc8",
 ];
 
 interface TelemetryChartProps {
@@ -34,81 +34,6 @@ export function TelemetryChart({
   plotError,
   onOpenConfiguration,
 }: TelemetryChartProps) {
-  const traces = plotData
-    ? plotData.y_columns.map((channelName, index) => ({
-        x: plotData.x_data,
-        y: plotData.series[channelName] ?? [],
-        type: "scatter" as const,
-        mode: "lines" as const,
-        name: channelName,
-        line: {
-          color: SERIES_COLORS[index % SERIES_COLORS.length],
-          width: 2,
-        },
-        hovertemplate: `<b>${channelName}</b>: %{y:.4f}<br>${plotData.x_column}: %{x:.4f}<extra></extra>`,
-      }))
-    : [];
-
-  const layout: Partial<Plotly.Layout> = {
-    autosize: true,
-    paper_bgcolor: "var(--color-background-elevated)",
-    plot_bgcolor: "var(--color-plot-surface)",
-    font: {
-      family: "var(--font-body), sans-serif",
-      size: 11,
-      color: "var(--color-foreground-muted)",
-    },
-    margin: { t: 14, r: 18, b: 36, l: 44 },
-    showlegend: traces.length > 1,
-    legend: {
-      bgcolor: "var(--color-panel)",
-      bordercolor: "var(--color-plot-hover-border)",
-      borderwidth: 1,
-      font: { size: 11, color: "var(--color-foreground)" },
-      x: 0.02,
-      y: 0.98,
-    },
-    xaxis: {
-      title: { text: "" },
-      automargin: true,
-      gridcolor: "var(--color-plot-grid)",
-      linecolor: "var(--color-plot-axis)",
-      tickfont: { size: 10, color: "var(--color-plot-tick)" },
-      zerolinecolor: "var(--color-plot-grid)",
-      showspikes: true,
-      spikecolor: "var(--color-plot-spike)",
-      spikethickness: 1,
-      spikedash: "solid",
-    },
-    yaxis: {
-      title: { text: "" },
-      automargin: true,
-      gridcolor: "var(--color-plot-grid)",
-      linecolor: "var(--color-plot-axis)",
-      tickfont: { size: 10, color: "var(--color-plot-tick)" },
-      zerolinecolor: "var(--color-plot-grid)",
-    },
-    hoverlabel: {
-      bgcolor: "var(--color-plot-hover-bg)",
-      bordercolor: "var(--color-plot-hover-border)",
-      font: {
-        size: 11,
-        color: "var(--color-foreground)",
-        family: "var(--font-body), sans-serif",
-      },
-    },
-  };
-
-  const config: Partial<Plotly.Config> = {
-    responsive: true,
-    displaylogo: false,
-    modeBarButtonsToRemove: [
-      "lasso2d",
-      "select2d",
-      "toggleSpikelines",
-    ] as Plotly.ModeBarDefaultButtons[],
-  };
-
   return (
     <section className="theme-inset-border flex min-h-[38rem] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background-elevated">
       <div className="relative flex min-h-0 flex-1">
@@ -117,14 +42,12 @@ export function TelemetryChart({
         ) : plotError ? (
           <PlotError message={plotError} />
         ) : plotData ? (
-          <div className="plot-shell h-full w-full flex-1 p-3 sm:p-4">
-            <Plot
-              data={traces}
-              layout={layout}
-              config={config}
-              style={{ width: "100%", height: "100%" }}
-              useResizeHandler
-              divId="telemetry-main-plot"
+          <div id="telemetry-main-plot" className="absolute inset-0">
+            <ReactECharts
+              option={buildOption(plotData)}
+              notMerge
+              style={{ height: "100%", width: "100%" }}
+              opts={{ renderer: "canvas" }}
             />
           </div>
         ) : (
@@ -136,6 +59,93 @@ export function TelemetryChart({
       </div>
     </section>
   );
+}
+
+function buildOption(plotData: PlotDataResponse): object {
+  const multi = plotData.y_columns.length > 1;
+
+  return {
+    backgroundColor: "#0a0b0d",
+    animation: false,
+    grid: {
+      left: 54,
+      right: 24,
+      top: multi ? 44 : 20,
+      bottom: 46,
+      containLabel: false,
+    },
+    legend: multi
+      ? {
+          show: true,
+          top: 10,
+          right: 24,
+          icon: "roundRect",
+          itemWidth: 16,
+          itemHeight: 4,
+          textStyle: { color: "#b5bdc8", fontSize: 11 },
+          inactiveColor: "#454b55",
+        }
+      : { show: false },
+    xAxis: {
+      type: "value",
+      name: plotData.x_column,
+      nameLocation: "middle",
+      nameGap: 28,
+      nameTextStyle: { color: "#8f98a3", fontSize: 11 },
+      axisLine: { lineStyle: { color: "rgba(215,221,229,0.10)" } },
+      axisTick: { lineStyle: { color: "rgba(215,221,229,0.10)" } },
+      axisLabel: { color: "#8f98a3", fontSize: 10 },
+      splitLine: { lineStyle: { color: "rgba(215,221,229,0.04)", type: "solid" } },
+      minorSplitLine: { show: false },
+    },
+    yAxis: {
+      type: "value",
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: "#8f98a3", fontSize: 10 },
+      splitLine: { lineStyle: { color: "rgba(215,221,229,0.04)", type: "solid" } },
+    },
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "rgba(14,15,17,0.96)",
+      borderColor: "rgba(183,189,200,0.16)",
+      borderWidth: 1,
+      padding: [8, 12],
+      textStyle: { color: "#d7dde5", fontSize: 11 },
+      axisPointer: {
+        type: "cross",
+        label: {
+          backgroundColor: "rgba(14,15,17,0.9)",
+          borderColor: "rgba(183,189,200,0.16)",
+          borderWidth: 1,
+          color: "#8f98a3",
+          fontSize: 10,
+          padding: [4, 8],
+          precision: 4,
+        },
+        crossStyle: { color: "rgba(255,235,59,0.45)", width: 1 },
+        lineStyle: { color: "rgba(255,235,59,0.45)", width: 1, type: "solid" },
+      },
+    },
+    dataZoom: [
+      { type: "inside", filterMode: "none", zoomOnMouseWheel: true, moveOnMouseMove: true },
+    ],
+    series: plotData.y_columns.map((col, i) => ({
+      name: col,
+      type: "line",
+      data: plotData.x_data.map((x, j) => [x, plotData.series[col]?.[j] ?? null]),
+      lineStyle: {
+        color: SERIES_COLORS[i % SERIES_COLORS.length],
+        width: 1.5,
+      },
+      itemStyle: { color: SERIES_COLORS[i % SERIES_COLORS.length] },
+      emphasis: { disabled: true },
+      symbol: "none",
+      sampling: "lttb",
+      large: true,
+      largeThreshold: 5000,
+    })),
+  };
 }
 
 function EmptyChartState({

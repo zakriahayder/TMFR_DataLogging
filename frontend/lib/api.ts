@@ -1,8 +1,10 @@
 import type {
   ConnectRequest,
+  DeviceFile,
   PlotDataRequest,
   PlotDataResponse,
   PortInfo,
+  PullFileRequest,
   SerialStatus,
   UploadResponse,
 } from "./types";
@@ -32,7 +34,24 @@ export function getPorts() {
 }
 
 export function connectSerial(payload: ConnectRequest) {
-  return requestJson<SerialStatus>("/api/serial/connect", {
+  return requestJson<SerialStatus>("/api/connect", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function disconnectSerial() {
+  return requestJson<SerialStatus>("/api/disconnect", {
+    method: "POST",
+  });
+}
+
+export function listDeviceFiles() {
+  return requestJson<DeviceFile[]>("/api/files");
+}
+
+export function pullDeviceFile(payload: PullFileRequest) {
+  return requestJson<UploadResponse>("/api/pull", {
     method: "POST",
     body: JSON.stringify(payload),
   });

@@ -1,14 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState, type DragEvent, type ReactNode } from "react";
+import Image from "next/image";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type DragEvent,
+  type ReactNode,
+} from "react";
 import {
   Activity,
   Cable,
   Download,
+  FileDown,
   FileSpreadsheet,
+  FolderOpen,
   RefreshCw,
   Settings,
   Trash2,
+  Unplug,
   UploadCloud,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -37,7 +47,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { PortInfo, SerialStatus, UploadResponse } from "@/lib/types";
+import type {
+  DeviceFile,
+  PortInfo,
+  SerialStatus,
+  UploadResponse,
+} from "@/lib/types";
 
 const BAUD_RATE_OPTIONS = [
   9600, 19200, 38400, 57600, 115200, 230400, 460800, 921600,
@@ -75,19 +90,22 @@ export function TelemetryTopBar({
   const isConnected = serialStatus?.connected ?? false;
 
   return (
-    <header className="theme-header-shadow border-b border-border bg-surface backdrop-blur">
+    <header className="theme-header-shadow">
       <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
         <div className="flex items-center gap-3">
-          <div className="theme-inset-border border border-border-strong bg-panel px-3 py-1.5">
+          <div className="flex items-center gap-2.5 px-2.5 py-1.5">
             <span className="brand-heading text-lg text-primary">
-              Telemetry Viewer
+              TMFR Telemetry Viewer
             </span>
           </div>
         </div>
 
         <div className="flex items-center gap-2">
           {dataset ? (
-            <StatusBadge icon={<FileSpreadsheet className="h-3.5 w-3.5" />} variant="primary">
+            <StatusBadge
+              icon={<FileSpreadsheet className="h-3.5 w-3.5" />}
+              variant="primary"
+            >
               {dataset.filename}
             </StatusBadge>
           ) : null}
@@ -112,7 +130,7 @@ export function TelemetryTopBar({
 
       <div className="flex flex-wrap items-center gap-3 border-t border-border px-4 py-2.5">
         <AxisSelect
-          label="X-Axis"
+          label="X"
           value={selectedXColumn}
           options={availableColumns}
           disabled={!dataset}
@@ -120,7 +138,7 @@ export function TelemetryTopBar({
         />
 
         <AxisSelect
-          label="Y-Axis"
+          label="Y"
           value={selectedYColumn}
           options={availableYColumns}
           disabled={!dataset}
@@ -160,12 +178,18 @@ interface TelemetryConfigurationModalProps {
   scanningPorts: boolean;
   connectingSerial: boolean;
   connectionError: string | null;
+  deviceFiles: DeviceFile[];
+  fetchingFiles: boolean;
+  pullingFile: string | null;
   dataset: UploadResponse | null;
   uploadLoading: boolean;
   plotLoading: boolean;
   onClose: () => void;
   onScanPorts: () => void;
   onConnectToSerial: (port: string, baudrate: number) => void;
+  onDisconnectSerial: () => void;
+  onFetchDeviceFiles: () => void;
+  onPullDeviceFile: (filename: string) => void;
   onUploadCsv: (file: File) => void;
   onClearDataset: () => void;
   onGeneratePlot: () => void | Promise<void>;
@@ -178,12 +202,18 @@ export function TelemetryConfigurationModal({
   scanningPorts,
   connectingSerial,
   connectionError,
+  deviceFiles,
+  fetchingFiles,
+  pullingFile,
   dataset,
   uploadLoading,
   plotLoading,
   onClose,
   onScanPorts,
   onConnectToSerial,
+  onDisconnectSerial,
+  onFetchDeviceFiles,
+  onPullDeviceFile,
   onUploadCsv,
   onClearDataset,
   onGeneratePlot,
@@ -191,6 +221,8 @@ export function TelemetryConfigurationModal({
   const [selectedPort, setSelectedPort] = useState("");
   const [selectedBaudRate, setSelectedBaudRate] = useState(115200);
   const [customBaudRate, setCustomBaudRate] = useState("");
+
+  const isConnected = serialStatus?.connected ?? false;
 
   useEffect(() => {
     if (!selectedPort && ports.length > 0) {
@@ -216,6 +248,7 @@ export function TelemetryConfigurationModal({
   }, [customBaudRate, selectedBaudRate]);
 
   const canGeneratePlot = dataset !== null && !uploadLoading && !plotLoading;
+  const isBusy = connectingSerial || fetchingFiles || pullingFile !== null;
 
   return (
     <Dialog
@@ -226,25 +259,29 @@ export function TelemetryConfigurationModal({
         }
       }}
     >
-      <DialogContent showCloseButton className="max-w-2xl p-0">
+      <DialogContent
+        showCloseButton
+        className="flex max-h-[90vh] max-w-2xl flex-col p-0"
+      >
         <DialogHeader>
           <DialogTitle>Telemetry Configuration</DialogTitle>
           <DialogDescription>
-            Configure the serial connection, choose a data source, and generate the plot.
+            Connect to a device over Serial (the device must be running the TMFR
+            telemetry sketch), or upload a CSV log file.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 overflow-y-auto p-5">
+        <div className="flex-1 space-y-4 overflow-y-auto p-5">
           <ConfigSection
             title="Serial Connection"
-            description="Choose a COM port and baud rate for live serial telemetry."
+            description="Choose a COM port and baud rate to connect."
           >
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
               <ConfigField label="COM Port">
                 <Select
                   value={selectedPort || undefined}
                   onValueChange={setSelectedPort}
-                  disabled={connectingSerial || ports.length === 0}
+                  disabled={isBusy || ports.length === 0}
                 >
                   <SelectTrigger className={modalFieldClassName}>
                     <SelectValue placeholder="No ports found" />
@@ -265,7 +302,7 @@ export function TelemetryConfigurationModal({
                 type="button"
                 variant="outline"
                 onClick={onScanPorts}
-                disabled={scanningPorts || connectingSerial}
+                disabled={isBusy}
                 className="sm:self-end"
               >
                 <RefreshCw
@@ -283,7 +320,7 @@ export function TelemetryConfigurationModal({
                     setSelectedBaudRate(Number(value));
                     setCustomBaudRate("");
                   }}
-                  disabled={connectingSerial}
+                  disabled={isBusy}
                 >
                   <SelectTrigger className={modalFieldClassName}>
                     <SelectValue />
@@ -303,7 +340,7 @@ export function TelemetryConfigurationModal({
                   value={customBaudRate}
                   onChange={(event) => setCustomBaudRate(event.target.value)}
                   placeholder="e.g. 500000"
-                  disabled={connectingSerial}
+                  disabled={isBusy}
                   inputMode="numeric"
                   className={modalFieldClassName}
                 />
@@ -312,19 +349,39 @@ export function TelemetryConfigurationModal({
 
             <div className="flex flex-wrap items-center justify-between gap-3">
               <Badge variant="default" className="bg-card py-1.5">
-                {serialStatus?.connected
-                  ? `Connected to ${serialStatus.port}`
+                {isConnected
+                  ? `Connected to ${serialStatus?.port}`
                   : "Disconnected"}
               </Badge>
 
-              <Button
-                type="button"
-                onClick={() => onConnectToSerial(selectedPort, activeBaudRate)}
-                disabled={!selectedPort || connectingSerial}
-              >
-                <Cable className="h-4 w-4" />
-                {connectingSerial ? "Connecting..." : "Connect"}
-              </Button>
+              <div className="flex gap-2">
+                {isConnected ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onDisconnectSerial}
+                    disabled={isBusy}
+                  >
+                    <Unplug className="h-4 w-4" />
+                    Disconnect
+                  </Button>
+                ) : null}
+
+                <Button
+                  type="button"
+                  onClick={() =>
+                    onConnectToSerial(selectedPort, activeBaudRate)
+                  }
+                  disabled={!selectedPort || isBusy}
+                >
+                  <Cable className="h-4 w-4" />
+                  {connectingSerial
+                    ? "Connecting..."
+                    : isConnected
+                      ? "Reconnect"
+                      : "Connect"}
+                </Button>
+              </div>
             </div>
 
             {connectionError ? (
@@ -334,9 +391,66 @@ export function TelemetryConfigurationModal({
             ) : null}
           </ConfigSection>
 
+          {isConnected ? (
+            <ConfigSection
+              title="Device Files"
+              description="List and pull CSV files stored on the SD Card."
+            >
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-muted-foreground">
+                  {deviceFiles.length > 0
+                    ? `${deviceFiles.length} file${deviceFiles.length === 1 ? "" : "s"} on device`
+                    : "Fetch files to see what's on the SD card."}
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onFetchDeviceFiles}
+                  disabled={isBusy}
+                >
+                  <FolderOpen
+                    className={`h-4 w-4 ${fetchingFiles ? "animate-pulse" : ""}`}
+                  />
+                  {fetchingFiles ? "Fetching..." : "Fetch Files"}
+                </Button>
+              </div>
+
+              {deviceFiles.length > 0 ? (
+                <div className="max-h-64 divide-y divide-border overflow-y-auto rounded-lg border border-border bg-card">
+                  {deviceFiles.map((file) => (
+                    <div
+                      key={file.name}
+                      className="flex items-center justify-between gap-3 px-3 py-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-medium text-foreground">
+                          {file.name}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {formatBytes(file.size)}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => onPullDeviceFile(file.name)}
+                        disabled={isBusy}
+                      >
+                        <FileDown className="h-3.5 w-3.5" />
+                        {pullingFile === file.name ? "Pulling..." : "Pull"}
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </ConfigSection>
+          ) : null}
+
           <ConfigSection
             title="Data Source"
-            description="Upload a CSV log file to load telemetry channels."
+            description="Upload a CSV log file from your computer."
           >
             <CsvDropzone loading={uploadLoading} onUploadCsv={onUploadCsv} />
 
@@ -348,7 +462,8 @@ export function TelemetryConfigurationModal({
                       {dataset.filename}
                     </p>
                     <p className="text-[11px] text-muted-foreground">
-                      {dataset.row_count.toLocaleString()} rows
+                      {dataset.row_count.toLocaleString()} rows &middot;{" "}
+                      {dataset.numeric_columns.length} numeric columns
                     </p>
                   </div>
 
@@ -365,7 +480,6 @@ export function TelemetryConfigurationModal({
               </Card>
             ) : null}
           </ConfigSection>
-
         </div>
 
         <DialogFooter>
@@ -386,6 +500,12 @@ export function TelemetryConfigurationModal({
       </DialogContent>
     </Dialog>
   );
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function CsvDropzone({
@@ -543,15 +663,23 @@ function StatusBadge({
   );
 }
 
-function clickPlotActionButton(action: "export") {
-  const plotRoot = document.getElementById("telemetry-main-plot");
-  if (!plotRoot) {
-    return;
-  }
-
-  const buttonSelectorByAction = {
-    export: '[data-title="Download plot as a png"]',
-  };
-
-  plotRoot.querySelector<HTMLElement>(buttonSelectorByAction[action])?.click();
+async function clickPlotActionButton(action: "export") {
+  if (action !== "export") return;
+  const { getInstanceByDom } = await import("echarts");
+  const wrapper = document.getElementById("telemetry-main-plot");
+  const chartEl = wrapper?.firstElementChild as HTMLElement | null;
+  if (!chartEl) return;
+  const instance = getInstanceByDom(chartEl);
+  if (!instance) return;
+  const url = instance.getDataURL({
+    type: "png",
+    pixelRatio: 2,
+    backgroundColor: "#0d0d0f",
+  });
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "plot.png";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }

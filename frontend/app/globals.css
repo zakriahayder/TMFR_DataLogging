@@ -1,0 +1,94 @@
+@import "./tokens.css";
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
+  --color-background: var(--color-background);
+  --color-background-elevated: var(--color-background-elevated);
+  --color-foreground: var(--color-foreground);
+  --color-foreground-muted: var(--color-foreground-muted);
+  --color-foreground-subtle: var(--color-foreground-subtle);
+  --color-surface: var(--color-surface);
+  --color-card: var(--color-card);
+  --color-popover: var(--color-popover);
+  --color-input: var(--color-input);
+  --color-panel: var(--color-panel);
+  --color-panel-strong: var(--color-panel-strong);
+  --color-panel-quiet: var(--color-panel-quiet);
+  --color-muted: var(--color-muted);
+  --color-muted-foreground: var(--color-muted-foreground);
+  --color-border: var(--color-border);
+  --color-border-strong: var(--color-border-strong);
+  --color-primary: var(--color-primary);
+  --color-primary-soft: var(--color-primary-soft);
+  --color-primary-foreground: var(--color-primary-foreground);
+  --color-ring: var(--color-ring);
+  --color-destructive: var(--color-destructive);
+  --color-destructive-soft: var(--color-destructive-soft);
+  --color-caution: var(--color-caution);
+  --color-caution-soft: var(--color-caution-soft);
+  --radius: var(--radius);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    min-height: 100%;
+  }
+
+  html {
+    font-size: 16px;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-body), sans-serif;
+    background: var(--background-app);
+    color: var(--color-foreground);
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+}
+
+@layer components {
+  .brand-heading {
+    font-family: var(--font-heading), sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: -0.08em;
+    line-height: 0.96;
+  }
+
+  .brand-label {
+    font-family: var(--font-heading), sans-serif;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    line-height: 1.1;
+  }
+
+  .theme-header-shadow {
+    box-shadow: var(--shadow-header);
+  }
+
+  .theme-panel-shadow {
+    box-shadow: var(--shadow-panel);
+  }
+
+  .theme-modal-shadow {
+    box-shadow: var(--shadow-modal);
+  }
+
+  .theme-inset-border {
+    box-shadow: var(--shadow-inset-border);
+  }
+}

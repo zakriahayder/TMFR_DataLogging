@@ -1,0 +1,38 @@
+
+node_modules/
+.next/
+.env*.local
+.DS_Store
+# Environment files
+.env
+.env.*
+!.env.example
+!.env.sample
+
+# Node / frontend
+node_modules/
+.pnpm-store/
+.next/
+.turbo/
+dist/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+
+
+# Python / backend
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+
+
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

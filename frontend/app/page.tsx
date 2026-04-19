@@ -209,7 +209,7 @@ export default function TelemetryPage() {
         onOpenConfiguration={() => setIsConfigurationOpen(true)}
       />
 
-      <main className="flex flex-1 flex-col px-4 pb-4 pt-3">
+      <main className="flex min-h-0 flex-1 flex-col px-4 pb-4 pt-3">
         <TelemetryChart
           dataset={dataset}
           plotData={plotData}

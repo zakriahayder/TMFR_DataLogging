@@ -50,6 +50,7 @@ export function TelemetryChart({
     : [];
 
   const layout: Partial<Plotly.Layout> = {
+    autosize: true,
     paper_bgcolor: "var(--color-background-elevated)",
     plot_bgcolor: "var(--color-plot-surface)",
     font: {
@@ -69,6 +70,7 @@ export function TelemetryChart({
     },
     xaxis: {
       title: { text: "" },
+      automargin: true,
       gridcolor: "var(--color-plot-grid)",
       linecolor: "var(--color-plot-axis)",
       tickfont: { size: 10, color: "var(--color-plot-tick)" },
@@ -80,6 +82,7 @@ export function TelemetryChart({
     },
     yaxis: {
       title: { text: "" },
+      automargin: true,
       gridcolor: "var(--color-plot-grid)",
       linecolor: "var(--color-plot-axis)",
       tickfont: { size: 10, color: "var(--color-plot-tick)" },
@@ -107,28 +110,30 @@ export function TelemetryChart({
   };
 
   return (
-    <section className="theme-inset-border flex min-h-[38rem] flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background-elevated">
-      {plotLoading ? (
-        <PlotSkeleton />
-      ) : plotError ? (
-        <PlotError message={plotError} />
-      ) : plotData ? (
-        <div className="h-full w-full p-4">
-          <Plot
-            data={traces}
-            layout={layout}
-            config={config}
-            style={{ width: "100%", height: "100%" }}
-            useResizeHandler
-            divId="telemetry-main-plot"
+    <section className="theme-inset-border flex min-h-[38rem] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background-elevated">
+      <div className="relative flex min-h-0 flex-1">
+        {plotLoading ? (
+          <PlotSkeleton />
+        ) : plotError ? (
+          <PlotError message={plotError} />
+        ) : plotData ? (
+          <div className="plot-shell h-full w-full flex-1 p-3 sm:p-4">
+            <Plot
+              data={traces}
+              layout={layout}
+              config={config}
+              style={{ width: "100%", height: "100%" }}
+              useResizeHandler
+              divId="telemetry-main-plot"
+            />
+          </div>
+        ) : (
+          <EmptyChartState
+            hasDataset={dataset !== null}
+            onOpenConfiguration={onOpenConfiguration}
           />
-        </div>
-      ) : (
-        <EmptyChartState
-          hasDataset={dataset !== null}
-          onOpenConfiguration={onOpenConfiguration}
-        />
-      )}
+        )}
+      </div>
     </section>
   );
 }
@@ -141,37 +146,41 @@ function EmptyChartState({
   onOpenConfiguration: () => void;
 }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-5 px-8 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-card text-primary">
-        <Settings2 className="h-6 w-6" />
+    <div className="absolute inset-0 flex items-center justify-center p-5 sm:p-8">
+      <div className="theme-panel-shadow theme-inset-border flex w-full max-w-lg flex-col items-center justify-center gap-5 rounded-2xl border border-border bg-[color:rgb(10_11_13_/_0.94)] px-8 py-10 text-center backdrop-blur-sm">
+        <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-card text-primary">
+          <Settings2 className="h-6 w-6" />
+        </div>
+        <div className="space-y-2">
+          <p className="text-base font-medium text-foreground">
+            {hasDataset ? "Generate your first plot" : "Load telemetry data to begin"}
+          </p>
+          <p className="mx-auto max-w-md text-sm text-muted-foreground">
+            {hasDataset
+              ? "Open settings to adjust the data source or generate the plot from the current CSV."
+              : "Open the configuration panel to connect serial hardware or upload a CSV log file."}
+          </p>
+        </div>
+        <Button type="button" onClick={onOpenConfiguration}>
+          <Settings2 className="h-4 w-4" />
+          Open Settings
+        </Button>
       </div>
-      <div className="space-y-2">
-        <p className="text-base font-medium text-foreground">
-          {hasDataset ? "Generate your first plot" : "Load telemetry data to begin"}
-        </p>
-        <p className="max-w-md text-sm text-muted-foreground">
-          {hasDataset
-            ? "Open settings to adjust the data source or generate the plot from the current CSV."
-            : "Open the configuration panel to connect serial hardware or upload a CSV log file."}
-        </p>
-      </div>
-      <Button type="button" onClick={onOpenConfiguration}>
-        <Settings2 className="h-4 w-4" />
-        Open Settings
-      </Button>
     </div>
   );
 }
 
 function PlotError({ message }: { message: string }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 px-8 text-center">
-      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
-        <AlertCircle className="h-6 w-6 text-destructive" />
-      </div>
-      <div className="max-w-sm space-y-1">
-        <p className="text-sm font-medium text-destructive">Plot generation failed</p>
-        <p className="text-xs text-muted-foreground">{message}</p>
+    <div className="absolute inset-0 flex items-center justify-center p-5 sm:p-8">
+      <div className="theme-panel-shadow theme-inset-border flex w-full max-w-md flex-col items-center justify-center gap-4 rounded-2xl border border-destructive/30 bg-[color:rgb(10_11_13_/_0.94)] px-8 py-10 text-center backdrop-blur-sm">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
+          <AlertCircle className="h-6 w-6 text-destructive" />
+        </div>
+        <div className="max-w-sm space-y-1">
+          <p className="text-sm font-medium text-destructive">Plot generation failed</p>
+          <p className="text-xs text-muted-foreground">{message}</p>
+        </div>
       </div>
     </div>
   );
@@ -179,7 +188,7 @@ function PlotError({ message }: { message: string }) {
 
 function PlotSkeleton() {
   return (
-    <div className="flex h-full w-full flex-col gap-4 p-4">
+    <div className="flex h-full w-full flex-1 flex-col gap-4 p-3 sm:p-4">
       <div className="flex gap-3">
         <div className="h-4 w-24 animate-pulse rounded bg-panel" />
         <div className="h-4 w-20 animate-pulse rounded bg-panel" />

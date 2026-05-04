@@ -21,23 +21,6 @@ ser = None
 csv_store = {}
 
 
-def parse_csv(filename, raw_bytes):
-    df = pd.read_csv(io.BytesIO(raw_bytes), on_bad_lines="skip")
-    csv_store[filename] = df
-    numeric_cols = df.select_dtypes(include="number").columns.tolist()
-    default_x = next(
-        (c for c in numeric_cols if c.lower() in {"time", "t", "timestamp", "elapsed", "ms", "seconds"}),
-        numeric_cols[0] if numeric_cols else None,
-    )
-    return {
-        "filename": filename,
-        "columns": df.columns.tolist(),
-        "numeric_columns": numeric_cols,
-        "row_count": len(df),
-        "default_x": default_x,
-    }
-
-
 @app.get("/api/ports")
 def ports():
     return [
@@ -53,13 +36,19 @@ async def connect(request: Request):
     if ser and ser.is_open:
         ser.close()
     try:
-        ser = serial.Serial(body["port"], body.get("baudrate", 115200), timeout=5, write_timeout=3)
+        ser = serial.Serial(
+            body["port"], body.get("baudrate", 115200), timeout=5, write_timeout=3
+        )
         time.sleep(0.5)
         ser.reset_input_buffer()
     except serial.SerialException as e:
         ser = None
         raise HTTPException(status_code=400, detail=str(e))
-    return {"connected": True, "port": body["port"], "baudrate": body.get("baudrate", 115200)}
+    return {
+        "connected": True,
+        "port": body["port"],
+        "baudrate": body.get("baudrate", 115200),
+    }
 
 
 @app.post("/api/disconnect")
@@ -79,7 +68,9 @@ def _serial_error(e: Exception) -> HTTPException:
     except Exception:
         pass
     ser = None
-    return HTTPException(status_code=400, detail=f"Serial error (device disconnected?): {e}")
+    return HTTPException(
+        status_code=400, detail=f"Serial error (device disconnected?): {e}"
+    )
 
 
 @app.get("/api/files")
@@ -107,7 +98,12 @@ def files():
                 return result
             if "," in decoded:
                 name, _, size = decoded.rpartition(",")
-                result.append({"name": name.strip(), "size": int(size) if size.strip().isdigit() else 0})
+                result.append(
+                    {
+                        "name": name.strip(),
+                        "size": int(size) if size.strip().isdigit() else 0,
+                    }
+                )
     except serial.SerialException as e:
         raise _serial_error(e)
 
@@ -138,7 +134,9 @@ async def pull(request: Request):
             if line.strip().startswith(b"ERROR"):
                 raise HTTPException(status_code=400, detail=line.decode().strip())
         else:
-            raise HTTPException(status_code=408, detail="Timeout waiting for BEGIN_FILE")
+            raise HTTPException(
+                status_code=408, detail="Timeout waiting for BEGIN_FILE"
+            )
 
         data = b""
         deadline = time.monotonic() + 30.0
@@ -149,7 +147,9 @@ async def pull(request: Request):
                 try:
                     return parse_csv(filename, raw)
                 except Exception as e:
-                    raise HTTPException(status_code=422, detail=f"Failed to parse CSV: {e}")
+                    raise HTTPException(
+                        status_code=422, detail=f"Failed to parse CSV: {e}"
+                    )
 
         raise HTTPException(status_code=408, detail="Timeout receiving file data")
     except HTTPException:
@@ -172,7 +172,9 @@ async def plot_data(request: Request):
     body = await request.json()
     df = csv_store.get(body["filename"])
     if df is None:
-        raise HTTPException(status_code=404, detail=f"Dataset '{body['filename']}' not found")
+        raise HTTPException(
+            status_code=404, detail=f"Dataset '{body['filename']}' not found"
+        )
 
     x_col = body["x_column"]
     y_cols = body["y_columns"]
@@ -189,4 +191,25 @@ async def plot_data(request: Request):
         "x_data": df[x_col].tolist(),
         "series": {col: df[col].tolist() for col in y_cols},
         "row_count": len(df),
+    }
+
+
+def parse_csv(filename, raw_bytes):
+    df = pd.read_csv(io.BytesIO(raw_bytes), on_bad_lines="skip")
+    csv_store[filename] = df
+    numeric_cols = df.select_dtypes(include="number").columns.tolist()
+    default_x = next(
+        (
+            c
+            for c in numeric_cols
+            if c.lower() in {"time", "t", "timestamp", "elapsed", "ms", "seconds"}
+        ),
+        numeric_cols[0] if numeric_cols else None,
+    )
+    return {
+        "filename": filename,
+        "columns": df.columns.tolist(),
+        "numeric_columns": numeric_cols,
+        "row_count": len(df),
+        "default_x": default_x,
     }

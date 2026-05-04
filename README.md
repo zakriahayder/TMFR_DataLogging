@@ -34,6 +34,9 @@ Python 3.11 or newer is required.
 ```bash
 python -m venv .venv
 
+# macOS / Linux
+source .venv/bin/activate
+
 # Windows
 .venv\Scripts\activate
 
@@ -57,18 +60,15 @@ Open `http://localhost:3000`.
 
 ## Usage
 
-1. Open the configuration modal (the gear icon in the top bar). Click **Scan** to find available serial ports, select the one your Teensy is on, and click **Connect**.
-
-<img width="681" height="774" alt="image" src="https://github.com/user-attachments/assets/d5241cb6-e7e7-4465-aca8-71fa605009fd" />
-
-3. Once connected, click **Fetch Files** to list the CSV files on the SD card, then click **Pull** next to a file to transfer it. Alternatively, drag a local CSV file onto the drop zone or click to browse.
-
-<img width="631" height="825" alt="image" src="https://github.com/user-attachments/assets/17533499-62bb-4e0e-a088-1d76a5db1d63" />
-
-5. Then click **Generate Plot**.
-
-<img width="1916" height="907" alt="image" src="https://github.com/user-attachments/assets/3848ff11-4c72-4ab0-a06f-525151aa2369" />
+1. Open the configuration modal (the gear icon in the top bar).
+2. Click **Scan** to find available serial ports, select the one your Teensy is on, and click **Connect**.
+3. Once connected, click **Fetch Files** to list the CSV files on the SD card, then click **Pull** next to a file to transfer it.
+4. Alternatively, drag a local CSV file onto the drop zone or click to browse.
+5. Select the X and Y axes in the top bar, then click **Generate Plot**.
+6. Use the **Download** button to export the chart as a PNG.
 
 ## Tech stack
 
-NextJs(Front end), FastAPI (backend)
+**Backend:** FastAPI, pandas, pyserial, uvicorn
+
+**Frontend:** Next.js 16, React 19, TypeScript, Tailwind CSS, ECharts, Radix UI

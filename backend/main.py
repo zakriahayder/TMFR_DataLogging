@@ -1,11 +1,13 @@
 import io
 import time
+from urllib.parse import quote
 
 import pandas as pd
 import serial
 import serial.tools.list_ports
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
 
 app = FastAPI()
 
@@ -19,6 +21,7 @@ app.add_middleware(
 
 ser = None
 csv_store = {}
+csv_raw_store = {}
 
 
 @app.get("/api/ports")
@@ -194,9 +197,30 @@ async def plot_data(request: Request):
     }
 
 
+@app.get("/api/csv/download")
+def download_csv(filename: str):
+    raw_bytes = csv_raw_store.get(filename)
+    if raw_bytes is None:
+        raise HTTPException(
+            status_code=404, detail=f"Dataset '{filename}' not found"
+        )
+
+    encoded_filename = quote(filename.replace("\r", "").replace("\n", ""))
+    return Response(
+        content=raw_bytes,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": (
+                f"attachment; filename*=UTF-8''{encoded_filename}"
+            )
+        },
+    )
+
+
 def parse_csv(filename, raw_bytes):
     df = pd.read_csv(io.BytesIO(raw_bytes), on_bad_lines="skip")
     csv_store[filename] = df
+    csv_raw_store[filename] = raw_bytes
     numeric_cols = df.select_dtypes(include="number").columns.tolist()
     default_x = next(
         (

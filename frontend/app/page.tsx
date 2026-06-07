@@ -5,6 +5,7 @@ import { Toaster, toast } from "sonner";
 import {
   connectSerial,
   disconnectSerial,
+  downloadCsv,
   fetchPlotData,
   getPorts,
   listDeviceFiles,
@@ -37,6 +38,7 @@ export default function TelemetryPage() {
 
   const [dataset, setDataset] = useState<UploadResponse | null>(null);
   const [uploadingCsv, setUploadingCsv] = useState(false);
+  const [downloadingCsv, setDownloadingCsv] = useState(false);
 
   const [plotData, setPlotData] = useState<PlotDataResponse | null>(null);
   const [loadingPlot, setLoadingPlot] = useState(false);
@@ -199,6 +201,33 @@ export default function TelemetryPage() {
     setPlotError(null);
   }
 
+  async function handleCsvDownload() {
+    if (!dataset) {
+      return;
+    }
+
+    setDownloadingCsv(true);
+
+    try {
+      const blob = await downloadCsv(dataset.filename);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = dataset.filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast.success(`Downloaded ${dataset.filename}`);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "CSV download failed";
+      toast.error(message);
+    } finally {
+      setDownloadingCsv(false);
+    }
+  }
+
   async function requestPlot(xColumn: string, yColumn: string) {
     if (!dataset || !xColumn || !yColumn) {
       return;
@@ -278,8 +307,10 @@ export default function TelemetryPage() {
         availableColumns={dataset?.columns ?? []}
         availableYColumns={availableYColumns}
         plotReady={plotData !== null}
+        downloadingCsv={downloadingCsv}
         onChangeXColumn={handleXColumnChange}
         onChangeYColumn={handleYColumnChange}
+        onDownloadCsv={handleCsvDownload}
         onClearWorkspace={handleClearWorkspace}
         onOpenConfiguration={() => setIsConfigurationOpen(true)}
       />

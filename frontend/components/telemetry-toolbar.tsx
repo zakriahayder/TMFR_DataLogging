@@ -68,8 +68,10 @@ interface TelemetryTopBarProps {
   availableColumns: string[];
   availableYColumns: string[];
   plotReady: boolean;
+  downloadingCsv: boolean;
   onChangeXColumn: (value: string) => void | Promise<void>;
   onChangeYColumn: (value: string) => void | Promise<void>;
+  onDownloadCsv: () => void | Promise<void>;
   onClearWorkspace: () => void;
   onOpenConfiguration: () => void;
 }
@@ -82,8 +84,10 @@ export function TelemetryTopBar({
   availableColumns,
   availableYColumns,
   plotReady,
+  downloadingCsv,
   onChangeXColumn,
   onChangeYColumn,
+  onDownloadCsv,
   onClearWorkspace,
   onOpenConfiguration,
 }: TelemetryTopBarProps) {
@@ -159,11 +163,21 @@ export function TelemetryTopBar({
           <Button
             type="button"
             size="sm"
+            variant="outline"
+            disabled={!dataset || downloadingCsv}
+            onClick={onDownloadCsv}
+          >
+            <FileDown className="h-4 w-4" />
+            {downloadingCsv ? "Downloading..." : "CSV"}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
             disabled={!plotReady}
             onClick={() => clickPlotActionButton("export")}
           >
             <Download className="h-4 w-4" />
-            Download
+            Plot PNG
           </Button>
         </div>
       </div>

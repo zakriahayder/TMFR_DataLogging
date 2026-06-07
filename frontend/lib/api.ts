@@ -80,3 +80,19 @@ export function fetchPlotData(payload: PlotDataRequest) {
     body: JSON.stringify(payload),
   });
 }
+
+export async function downloadCsv(filename: string) {
+  const params = new URLSearchParams({ filename });
+  const response = await fetch(
+    `${API_BASE_URL}/api/csv/download?${params.toString()}`,
+  );
+
+  if (!response.ok) {
+    const message = await response.text().catch(() => response.statusText);
+    throw new Error(
+      message || `CSV download failed with status ${response.status}`,
+    );
+  }
+
+  return response.blob();
+}

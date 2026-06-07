@@ -65,7 +65,8 @@ Open `http://localhost:3000`.
 3. Once connected, click **Fetch Files** to list the CSV files on the SD card, then click **Pull** next to a file to transfer it.
 4. Alternatively, drag a local CSV file onto the drop zone or click to browse.
 5. Select the X and Y axes in the top bar, then click **Generate Plot**.
-6. Use the **Download** button to export the chart as a PNG.
+6. Use the **CSV** button to download the complete source file, or **Plot PNG**
+   to export the chart as an image.
 
 ## Tech stack
 

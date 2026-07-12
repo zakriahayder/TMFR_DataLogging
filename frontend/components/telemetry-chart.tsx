@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 import { AlertCircle, Settings2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { PlotDataResponse, UploadResponse } from "@/lib/types";
@@ -10,14 +11,31 @@ const ReactECharts = dynamic(() => import("echarts-for-react"), {
   loading: () => <PlotSkeleton />,
 });
 
-const SERIES_COLORS = [
-  "#2196f3",
-  "#bbdefb",
-  "#ffeb3b",
-  "#f44336",
-  "#d7dde5",
-  "#b5bdc8",
-];
+interface PlotTheme {
+  surface: string;
+  grid: string;
+  axis: string;
+  tick: string;
+  hoverBackground: string;
+  hoverBorder: string;
+  spike: string;
+  foreground: string;
+  muted: string;
+  series: string[];
+}
+
+const DEFAULT_PLOT_THEME: PlotTheme = {
+  surface: "#0a0b0d",
+  grid: "rgba(215,221,229,0.04)",
+  axis: "rgba(215,221,229,0.08)",
+  tick: "#8f98a3",
+  hoverBackground: "rgba(18,18,18,0.96)",
+  hoverBorder: "rgba(183,189,200,0.16)",
+  spike: "rgba(255,235,59,0.62)",
+  foreground: "#d7dde5",
+  muted: "#b5bdc8",
+  series: ["#2196f3", "#bbdefb", "#ffeb3b", "#f44336", "#d7dde5", "#b5bdc8"],
+};
 
 interface TelemetryChartProps {
   dataset: UploadResponse | null;
@@ -34,6 +52,8 @@ export function TelemetryChart({
   plotError,
   onOpenConfiguration,
 }: TelemetryChartProps) {
+  const plotTheme = usePlotTheme();
+
   return (
     <section className="theme-inset-border flex min-h-[38rem] min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-background-elevated">
       <div className="relative flex min-h-0 flex-1">
@@ -44,7 +64,7 @@ export function TelemetryChart({
         ) : plotData ? (
           <div id="telemetry-main-plot" className="absolute inset-0">
             <ReactECharts
-              option={buildOption(plotData)}
+              option={buildOption(plotData, plotTheme)}
               notMerge
               style={{ height: "100%", width: "100%" }}
               opts={{ renderer: "canvas" }}
@@ -61,11 +81,11 @@ export function TelemetryChart({
   );
 }
 
-function buildOption(plotData: PlotDataResponse): object {
+function buildOption(plotData: PlotDataResponse, theme: PlotTheme): object {
   const multi = plotData.y_columns.length > 1;
 
   return {
-    backgroundColor: "#0a0b0d",
+    backgroundColor: theme.surface,
     animation: false,
     grid: {
       left: 54,
@@ -82,8 +102,8 @@ function buildOption(plotData: PlotDataResponse): object {
           icon: "roundRect",
           itemWidth: 16,
           itemHeight: 4,
-          textStyle: { color: "#b5bdc8", fontSize: 11 },
-          inactiveColor: "#454b55",
+          textStyle: { color: theme.muted, fontSize: 11 },
+          inactiveColor: theme.tick,
         }
       : { show: false },
     xAxis: {
@@ -91,40 +111,40 @@ function buildOption(plotData: PlotDataResponse): object {
       name: plotData.x_column,
       nameLocation: "middle",
       nameGap: 28,
-      nameTextStyle: { color: "#8f98a3", fontSize: 11 },
-      axisLine: { lineStyle: { color: "rgba(215,221,229,0.10)" } },
-      axisTick: { lineStyle: { color: "rgba(215,221,229,0.10)" } },
-      axisLabel: { color: "#8f98a3", fontSize: 10 },
-      splitLine: { lineStyle: { color: "rgba(215,221,229,0.04)", type: "solid" } },
+      nameTextStyle: { color: theme.tick, fontSize: 11 },
+      axisLine: { lineStyle: { color: theme.axis } },
+      axisTick: { lineStyle: { color: theme.axis } },
+      axisLabel: { color: theme.tick, fontSize: 10 },
+      splitLine: { lineStyle: { color: theme.grid, type: "solid" } },
       minorSplitLine: { show: false },
     },
     yAxis: {
       type: "value",
       axisLine: { show: false },
       axisTick: { show: false },
-      axisLabel: { color: "#8f98a3", fontSize: 10 },
-      splitLine: { lineStyle: { color: "rgba(215,221,229,0.04)", type: "solid" } },
+      axisLabel: { color: theme.tick, fontSize: 10 },
+      splitLine: { lineStyle: { color: theme.grid, type: "solid" } },
     },
     tooltip: {
       trigger: "axis",
-      backgroundColor: "rgba(14,15,17,0.96)",
-      borderColor: "rgba(183,189,200,0.16)",
+      backgroundColor: theme.hoverBackground,
+      borderColor: theme.hoverBorder,
       borderWidth: 1,
       padding: [8, 12],
-      textStyle: { color: "#d7dde5", fontSize: 11 },
+      textStyle: { color: theme.foreground, fontSize: 11 },
       axisPointer: {
         type: "cross",
         label: {
-          backgroundColor: "rgba(14,15,17,0.9)",
-          borderColor: "rgba(183,189,200,0.16)",
+          backgroundColor: theme.hoverBackground,
+          borderColor: theme.hoverBorder,
           borderWidth: 1,
-          color: "#8f98a3",
+          color: theme.tick,
           fontSize: 10,
           padding: [4, 8],
           precision: 4,
         },
-        crossStyle: { color: "rgba(255,235,59,0.45)", width: 1 },
-        lineStyle: { color: "rgba(255,235,59,0.45)", width: 1, type: "solid" },
+        crossStyle: { color: theme.spike, width: 1 },
+        lineStyle: { color: theme.spike, width: 1, type: "solid" },
       },
     },
     dataZoom: [
@@ -135,10 +155,10 @@ function buildOption(plotData: PlotDataResponse): object {
       type: "line",
       data: plotData.x_data.map((x, j) => [x, plotData.series[col]?.[j] ?? null]),
       lineStyle: {
-        color: SERIES_COLORS[i % SERIES_COLORS.length],
+        color: theme.series[i % theme.series.length],
         width: 1.5,
       },
-      itemStyle: { color: SERIES_COLORS[i % SERIES_COLORS.length] },
+      itemStyle: { color: theme.series[i % theme.series.length] },
       emphasis: { disabled: true },
       symbol: "none",
       sampling: "lttb",
@@ -146,6 +166,51 @@ function buildOption(plotData: PlotDataResponse): object {
       largeThreshold: 5000,
     })),
   };
+}
+
+function usePlotTheme(): PlotTheme {
+  const [theme, setTheme] = useState(DEFAULT_PLOT_THEME);
+
+  useEffect(() => {
+    function refreshTheme() {
+      const styles = getComputedStyle(document.documentElement);
+      const read = (name: string, fallback: string) =>
+        styles.getPropertyValue(name).trim() || fallback;
+
+      setTheme({
+        surface: read("--color-plot-surface", DEFAULT_PLOT_THEME.surface),
+        grid: read("--color-plot-grid", DEFAULT_PLOT_THEME.grid),
+        axis: read("--color-plot-axis", DEFAULT_PLOT_THEME.axis),
+        tick: read("--color-plot-tick", DEFAULT_PLOT_THEME.tick),
+        hoverBackground: read(
+          "--color-plot-hover-bg",
+          DEFAULT_PLOT_THEME.hoverBackground,
+        ),
+        hoverBorder: read(
+          "--color-plot-hover-border",
+          DEFAULT_PLOT_THEME.hoverBorder,
+        ),
+        spike: read("--color-plot-spike", DEFAULT_PLOT_THEME.spike),
+        foreground: read("--color-foreground", DEFAULT_PLOT_THEME.foreground),
+        muted: read("--color-foreground-muted", DEFAULT_PLOT_THEME.muted),
+        series: DEFAULT_PLOT_THEME.series.map((fallback, index) =>
+          read(`--color-series-${index + 1}`, fallback),
+        ),
+      });
+    }
+
+    refreshTheme();
+
+    const observer = new MutationObserver(refreshTheme);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  return theme;
 }
 
 function EmptyChartState({
@@ -157,7 +222,7 @@ function EmptyChartState({
 }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center p-5 sm:p-8">
-      <div className="theme-panel-shadow theme-inset-border flex w-full max-w-lg flex-col items-center justify-center gap-5 rounded-2xl border border-border bg-[color:rgb(10_11_13_/_0.94)] px-8 py-10 text-center backdrop-blur-sm">
+      <div className="theme-panel-shadow theme-inset-border flex w-full max-w-lg flex-col items-center justify-center gap-5 rounded-2xl border border-border bg-surface px-8 py-10 text-center backdrop-blur-sm">
         <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-border bg-card text-primary">
           <Settings2 className="h-6 w-6" />
         </div>
@@ -183,7 +248,7 @@ function EmptyChartState({
 function PlotError({ message }: { message: string }) {
   return (
     <div className="absolute inset-0 flex items-center justify-center p-5 sm:p-8">
-      <div className="theme-panel-shadow theme-inset-border flex w-full max-w-md flex-col items-center justify-center gap-4 rounded-2xl border border-destructive/30 bg-[color:rgb(10_11_13_/_0.94)] px-8 py-10 text-center backdrop-blur-sm">
+      <div className="theme-panel-shadow theme-inset-border flex w-full max-w-md flex-col items-center justify-center gap-4 rounded-2xl border border-destructive/30 bg-surface px-8 py-10 text-center backdrop-blur-sm">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10">
           <AlertCircle className="h-6 w-6 text-destructive" />
         </div>

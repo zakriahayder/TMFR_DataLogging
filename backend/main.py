@@ -99,6 +99,8 @@ def files():
             decoded = line.decode(errors="replace").strip()
             if decoded == "END_LIST":
                 return result
+            if decoded.startswith("ERROR"):
+                raise HTTPException(status_code=400, detail=decoded)
             if "," in decoded:
                 name, _, size = decoded.rpartition(",")
                 result.append(

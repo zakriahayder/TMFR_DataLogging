@@ -47,6 +47,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ThemeToggle } from "@/components/theme-toggle";
 import type {
   DeviceFile,
   PortInfo,
@@ -119,6 +120,8 @@ export function TelemetryTopBar({
               ? `${serialStatus.port} @ ${serialStatus.baudrate}`
               : "Serial idle"}
           </StatusBadge>
+
+          <ThemeToggle />
 
           <Button
             type="button"
@@ -685,10 +688,13 @@ async function clickPlotActionButton(action: "export") {
   if (!chartEl) return;
   const instance = getInstanceByDom(chartEl);
   if (!instance) return;
+  const plotBackground = getComputedStyle(document.documentElement)
+    .getPropertyValue("--color-plot-surface")
+    .trim();
   const url = instance.getDataURL({
     type: "png",
     pixelRatio: 2,
-    backgroundColor: "#0d0d0f",
+    backgroundColor: plotBackground || "#0d0d0f",
   });
   const a = document.createElement("a");
   a.href = url;

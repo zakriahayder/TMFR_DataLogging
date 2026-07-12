@@ -1,4 +1,5 @@
-:root {
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
 
   --color-black: #050505;
@@ -76,4 +77,84 @@
   --shadow-panel: 0 18px 50px rgb(0 0 0 / 0.24);
   --shadow-modal: 0 28px 90px rgb(0 0 0 / 0.5);
   --shadow-inset-border: inset 0 0 0 1px rgb(255 255 255 / 0.02);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+
+  --color-black: #050505;
+  --color-white: #ffffff;
+  --color-dark-gray-950: #0d0d0f;
+  --color-dark-gray-900: #121212;
+  --color-dark-gray-850: #17191c;
+  --color-dark-gray-800: #1e2126;
+  --color-dark-gray-750: #252930;
+  --color-dark-gray-700: #2e333b;
+  --color-dark-gray-600: #454b55;
+  --color-light-gray-500: #66717d;
+  --color-light-gray-400: #87919d;
+  --color-light-gray-300: #c5ccd6;
+  --color-light-gray-200: #edf1f5;
+
+  --color-blue-accent: #1667b7;
+  --color-blue-pale: #d8ecff;
+  --color-red-support: #c9332b;
+  --color-yellow-support: #b58a00;
+
+  --color-background: #f4f7fb;
+  --color-background-elevated: #ffffff;
+  --color-foreground: #14171b;
+  --color-foreground-muted: #4f5b67;
+  --color-foreground-subtle: #77818d;
+
+  --color-surface: rgb(255 255 255 / 0.94);
+  --color-card: #f8fafc;
+  --color-panel: #edf2f7;
+  --color-panel-strong: #ffffff;
+  --color-panel-quiet: #f2f6fa;
+  --color-muted: #dce4ed;
+  --color-muted-foreground: #596572;
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-foreground);
+  --color-input: #ffffff;
+  --color-ring: rgb(22 103 183 / 0.32);
+  --radius: 0.625rem;
+
+  --color-border: rgb(33 49 64 / 0.14);
+  --color-border-strong: rgb(22 103 183 / 0.34);
+
+  --color-primary: var(--color-blue-accent);
+  --color-primary-soft: var(--color-blue-pale);
+  --color-primary-foreground: var(--color-white);
+
+  --color-destructive: var(--color-red-support);
+  --color-destructive-soft: rgb(201 51 43 / 0.11);
+  --color-caution: var(--color-yellow-support);
+  --color-caution-soft: rgb(181 138 0 / 0.14);
+
+  --color-overlay: rgb(15 23 42 / 0.36);
+
+  --color-plot-surface: #ffffff;
+  --color-plot-grid: rgb(33 49 64 / 0.08);
+  --color-plot-axis: rgb(33 49 64 / 0.14);
+  --color-plot-tick: #66717d;
+  --color-plot-hover-bg: rgb(255 255 255 / 0.98);
+  --color-plot-hover-border: rgb(33 49 64 / 0.18);
+  --color-plot-spike: rgb(181 138 0 / 0.7);
+
+  --color-series-1: #1667b7;
+  --color-series-2: #11a3a8;
+  --color-series-3: #b58a00;
+  --color-series-4: #c9332b;
+  --color-series-5: #6f42c1;
+  --color-series-6: #52616f;
+
+  --background-app:
+    radial-gradient(circle at top, rgb(22 103 183 / 0.12), transparent 24rem),
+    linear-gradient(180deg, #ffffff 0%, #f4f7fb 100%);
+
+  --shadow-header: 0 8px 28px rgb(15 23 42 / 0.08);
+  --shadow-panel: 0 18px 44px rgb(15 23 42 / 0.09);
+  --shadow-modal: 0 28px 80px rgb(15 23 42 / 0.22);
+  --shadow-inset-border: inset 0 0 0 1px rgb(255 255 255 / 0.52);
 }
